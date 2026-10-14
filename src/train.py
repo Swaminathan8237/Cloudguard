@@ -115,11 +115,15 @@ def main():
 
     print("\n3. Stratified Train-Test Split (80/20, random_state=42):")
     print(f"   Training set : {len(X_train):,} samples (80.00%)")
-    print(f"     Safe (0)   : {sum(y_train==0):,} ({sum(y_train==0)/len(y_train)*100:.2f}%)")
-    print(f"     Unsafe (1) : {sum(y_train==1):,} ({sum(y_train==1)/len(y_train)*100:.2f}%)")
+    safe_train = list(y_train).count(0)
+    unsafe_train = list(y_train).count(1)
+    safe_test = list(y_test).count(0)
+    unsafe_test = list(y_test).count(1)
+    print(f"     Safe (0)   : {safe_train:,} ({safe_train/len(y_train)*100:.2f}%)")
+    print(f"     Unsafe (1) : {unsafe_train:,} ({unsafe_train/len(y_train)*100:.2f}%)")
     print(f"   Testing set  : {len(X_test):,} samples (20.00%)")
-    print(f"     Safe (0)   : {sum(y_test==0):,} ({sum(y_test==0)/len(y_test)*100:.2f}%)")
-    print(f"     Unsafe (1) : {sum(y_test==1):,} ({sum(y_test==1)/len(y_test)*100:.2f}%)")
+    print(f"     Safe (0)   : {safe_test:,} ({safe_test/len(y_test)*100:.2f}%)")
+    print(f"     Unsafe (1) : {unsafe_test:,} ({unsafe_test/len(y_test)*100:.2f}%)")
 
     # 4. Define Models
     # Model A: Logistic Regression with StandardScaler inside Pipeline
@@ -180,7 +184,7 @@ def main():
         weighted_f1 = f1_score(y_test, y_pred, average='weighted')
 
         # Confusion Matrix
-        cm = confusion_matrix(y_test, y_pred)
+        cm = confusion_matrix(list(y_test), [int(p) for p in y_pred])
         tn, fp, fn, tp = cm.ravel()
 
         print(f"  Accuracy           : {acc:.6f} ({acc*100:.3f}%)")
@@ -258,7 +262,7 @@ def main():
     importances = pd.Series(rf.feature_importances_, index=feature_cols).sort_values(ascending=True)
 
     fig, ax = plt.subplots(figsize=(8, 4.5))
-    bars = ax.barh(importances.index, importances.values, color="#1c7ed6", edgecolor="#333", height=0.55)
+    bars = ax.barh(list(importances.index), list(importances.values), color="#1c7ed6", edgecolor="#333", height=0.55)
     for bar in bars:
         w = bar.get_width()
         ax.text(w + 0.015, bar.get_y() + bar.get_height()/2., f"{w*100:.2f}%", va='center', fontsize=11, fontweight='bold')

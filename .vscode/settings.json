@@ -8,6 +8,8 @@
         "C:\\Users\\Swaminathan\\AppData\\Local\\Programs\\Python\\Python310\\lib\\site-packages"
     ],
     "python.analysis.diagnosticSeverityOverrides": {
-        "reportMissingImports": "none"
+        "reportMissingImports": "none",
+        "reportMissingTypeStubs": "none",
+        "reportDeprecated": "none"
     }
 }

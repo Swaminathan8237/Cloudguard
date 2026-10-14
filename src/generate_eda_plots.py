@@ -49,7 +49,7 @@ unsafe_color = "#d95f02"
 # 1. Target Class Distribution
 plt.figure(figsize=(7, 5), dpi=300)
 counts = df['Label'].value_counts()
-bars = plt.bar(counts.index, counts.values, color=[unsafe_color, safe_color], width=0.5, edgecolor='black')
+bars = plt.bar(list(counts.index), list(counts.values), color=[unsafe_color, safe_color], width=0.5, edgecolor='black')
 plt.title("Target Class Distribution: Safe vs. Unsafe Water", fontsize=13, fontweight='bold', pad=15)
 plt.xlabel("Water Potability Label", fontsize=11)
 plt.ylabel("Number of Observations", fontsize=11)
@@ -100,13 +100,14 @@ corr = corr_df.corr()
 
 im = plt.imshow(corr, cmap='coolwarm', vmin=-1, vmax=1)
 plt.colorbar(im, fraction=0.046, pad=0.04)
-plt.xticks(range(len(corr)), corr.columns, rotation=30, ha='right', fontsize=10)
-plt.yticks(range(len(corr)), corr.columns, fontsize=10)
+plt.xticks(range(len(corr)), list(corr.columns), rotation=30, ha='right', fontsize=10)
+plt.yticks(range(len(corr)), list(corr.columns), fontsize=10)
 plt.title("Correlation Matrix (Sensors and Binary Safety)", fontsize=13, fontweight='bold', pad=15)
 
+corr_mat = corr.to_numpy()
 for i in range(len(corr)):
     for j in range(len(corr)):
-        val = corr.iloc[i, j]
+        val = float(corr_mat[i, j])
         color = "white" if abs(val) > 0.5 else "black"
         plt.text(j, i, f"{val:.2f}", ha="center", va="center", color=color, fontweight='bold')
 
@@ -119,8 +120,8 @@ print("Saved correlation_matrix.png")
 plt.figure(figsize=(7, 4), dpi=300)
 importances = pd.Series([0.6744, 0.2566, 0.0539, 0.0151], index=['TDS_ppm', 'Turbidity_NTU', 'Temperature_C', 'pH'])
 y_pos = np.arange(len(importances))
-bars = plt.barh(y_pos, importances.values[::-1], color='#1f77b4', edgecolor='black', height=0.55)
-plt.yticks(y_pos, importances.index[::-1], fontsize=10)
+bars = plt.barh(y_pos, list(importances.values[::-1]), color='#1f77b4', edgecolor='black', height=0.55)
+plt.yticks(y_pos, list(importances.index[::-1]), fontsize=10)
 plt.xlabel("Gini Feature Importance", fontsize=11)
 plt.title("Random Forest Feature Importance (Baseline Classifier)", fontsize=12, fontweight='bold', pad=15)
 plt.grid(axis='x', linestyle='--', alpha=0.5)

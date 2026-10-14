@@ -169,7 +169,7 @@ print(f"\\nImbalance Ratio (Unsafe : Safe): {imbalance_ratio:.2f} : 1")
 
 fig, ax = plt.subplots(figsize=(6, 4))
 palette = {"Safe": "#2b8a3e", "Unsafe": "#c92a2a"}
-bars = ax.bar(counts.index, counts.values, color=[palette[c] for c in counts.index], edgecolor="#333", width=0.5)
+bars = ax.bar(list(counts.index), list(counts.values), color=[palette[c] for c in counts.index], edgecolor="#333", width=0.5)
 
 for bar in bars:
     h = bar.get_height()
@@ -366,8 +366,8 @@ target_mapping = {'Safe': 0, 'Unsafe': 1}
 y = df['Label'].map(target_mapping)
 
 print("\\nTarget Encoding:")
-print(f"  'Safe'   -> 0 (Count: {sum(y==0):,}, {sum(y==0)/len(y)*100:.2f}%)")
-print(f"  'Unsafe' -> 1 (Count: {sum(y==1):,}, {sum(y==1)/len(y)*100:.2f}%)")
+print(f"  'Safe'   -> 0 (Count: {list(y).count(0):,}, {list(y).count(0)/len(y)*100:.2f}%)")
+print(f"  'Unsafe' -> 1 (Count: {list(y).count(1):,}, {list(y).count(1)/len(y)*100:.2f}%)")
 """))
 
     # Section 2 Markdown
@@ -383,12 +383,16 @@ Preserving the exact 70:30 class distribution across both training (80,640 sampl
     stratify=y
 )
 
+safe_train = list(y_train).count(0)
+unsafe_train = list(y_train).count(1)
+safe_test = list(y_test).count(0)
+unsafe_test = list(y_test).count(1)
 print(f"Training set : {len(X_train):,} samples (80.00%)")
-print(f"  Safe (0)   : {sum(y_train==0):,} ({sum(y_train==0)/len(y_train)*100:.2f}%)")
-print(f"  Unsafe (1) : {sum(y_train==1):,} ({sum(y_train==1)/len(y_train)*100:.2f}%)")
+print(f"  Safe (0)   : {safe_train:,} ({safe_train/len(y_train)*100:.2f}%)")
+print(f"  Unsafe (1) : {unsafe_train:,} ({unsafe_train/len(y_train)*100:.2f}%)")
 print(f"Testing set  : {len(X_test):,} samples (20.00%)")
-print(f"  Safe (0)   : {sum(y_test==0):,} ({sum(y_test==0)/len(y_test)*100:.2f}%)")
-print(f"  Unsafe (1) : {sum(y_test==1):,} ({sum(y_test==1)/len(y_test)*100:.2f}%)")
+print(f"  Safe (0)   : {safe_test:,} ({safe_test/len(y_test)*100:.2f}%)")
+print(f"  Unsafe (1) : {unsafe_test:,} ({unsafe_test/len(y_test)*100:.2f}%)")
 """))
 
     # Section 3 Markdown
@@ -442,7 +446,7 @@ for name, model in trained_models.items():
     macro_f1 = f1_score(y_test, y_pred, average='macro')
     weighted_f1 = f1_score(y_test, y_pred, average='weighted')
     
-    cm = confusion_matrix(y_test, y_pred)
+    cm = confusion_matrix(list(y_test), [int(p) for p in y_pred])
     confusion_matrices[name] = cm
     tn, fp, fn, tp = cm.ravel()
     
@@ -522,7 +526,7 @@ Calculating Mean Decrease in Impurity (Gini Importance) across all 100 ensemble 
 importances = pd.Series(rf.feature_importances_, index=feature_cols).sort_values(ascending=True)
 
 fig, ax = plt.subplots(figsize=(7, 4))
-bars = ax.barh(importances.index, importances.values, color="#1c7ed6", edgecolor="#333", height=0.5)
+bars = ax.barh(list(importances.index), list(importances.values), color="#1c7ed6", edgecolor="#333", height=0.5)
 
 for bar in bars:
     w = bar.get_width()

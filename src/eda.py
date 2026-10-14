@@ -268,12 +268,12 @@ def plot_pairwise_relationships(df):
         diag_kws={"fill": True, "alpha": 0.45},
         corner=False
     )
-    g.fig.subplots_adjust(top=0.94)
-    g.fig.suptitle("Pairwise Sensor Feature Scatter & KDE Distributions by Class (5% Stratified Sample)", fontsize=13, fontweight='bold')
+    g.figure.subplots_adjust(top=0.94)
+    g.figure.suptitle("Pairwise Sensor Feature Scatter & KDE Distributions by Class (5% Stratified Sample)", fontsize=13, fontweight='bold')
     
     out_path = REPORTS_FIG_DIR / "feature_pairplot.png"
     g.savefig(out_path, dpi=250)
-    plt.close(g.fig)
+    plt.close()
     print(f"  Saved figure: {out_path}")
 
 # ---------------------------------------------------------------------------

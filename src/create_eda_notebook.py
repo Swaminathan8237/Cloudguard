@@ -233,8 +233,8 @@ g = sns.pairplot(
     diag_kind="kde",
     plot_kws={"alpha": 0.35, "s": 12, "edgecolor": "none"}
 )
-g.fig.subplots_adjust(top=0.94)
-g.fig.suptitle("Pairwise Feature Scatter & KDE Distributions (5% Stratified Sample)", fontsize=12, fontweight='bold')
+g.figure.subplots_adjust(top=0.94)
+g.figure.suptitle("Pairwise Feature Scatter & KDE Distributions (5% Stratified Sample)", fontsize=12, fontweight='bold')
 plt.show()
 """))
 
