@@ -65,7 +65,11 @@ Load the authoritative dataset and verify that it contains exactly 100,800 rows 
 """))
 
     # Cell 4: Data loading code
-    cells.append(nbf.v4.new_code_cell("""# Robust multi-path locator that works in any environment (VS Code, Jupyter, Google Colab, etc.)
+    cells.append(nbf.v4.new_code_cell("""import os
+from pathlib import Path
+import pandas as pd
+
+# Robust multi-path locator that works in any environment (VS Code, Jupyter, Google Colab, etc.)
 def find_dataset():
     candidates = [
         Path("data/water_quality_dataset1.csv"),
@@ -326,7 +330,7 @@ summary_table.round(2)
 
     nb.cells = cells
     
-    out_dir = Path("notebooks")
+    out_dir = Path(__file__).resolve().parent.parent / "notebooks"
     out_dir.mkdir(parents=True, exist_ok=True)
     out_path = out_dir / "02_eda.ipynb"
     with open(out_path, "w", encoding="utf-8") as f:
