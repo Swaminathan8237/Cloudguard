@@ -28,12 +28,13 @@
 - **Authoritative Data File**: `data/water_quality_dataset1.csv`
 - **Original Source**: Mendeley Data repository (Water Potability / IoT Water Monitoring Dataset).
 - **Physical Dimensions**: Exactly **100,800 rows × 5 columns** (no missing rows, no truncated rows).
-- **File Size**: 4,374,321 bytes (~4.17 MB).
+- **File Size**: **2,964,409 bytes** (~2.83 MB) | SHA-256: `90f9c7cb7404fb69b655ee27293c91b82ee3a346712e06035f8259393835a04a`.
+  *(Note: A previous mention of 4.17 MB reflected a temporary experiment with 5 engineered temporal columns, subsequently cleanly reverted to canonical 5 columns).*
 - **Schema & Data Types**:
-  1. `pH`: `float64` — Range [6.09, 9.96], mean 7.57, std 0.72. Physical drinking water acceptable limit: 6.5 to 8.5.
-  2. `TDS_ppm`: `float64` — Total Dissolved Solids in parts per million. Range [28.60, 2806.10], mean 557.54, std 521.90. Acceptable drinking limit: < 300–500 ppm.
-  3. `Turbidity_NTU`: `float64` — Nephelometric Turbidity Units (cloudiness). Range [0.00, 72.75], mean 11.08, std 10.36. Acceptable drinking limit: < 5 NTU.
-  4. `Temperature_C`: `float64` — Water temperature in Celsius. Range [16.56, 31.51], mean 24.95, std 2.76.
+  1. `pH`: `float64` — Range [6.09, 9.96], mean 7.59, std 0.80.
+  2. `TDS_ppm`: `float64` — Total Dissolved Solids in parts per million. Range [28.60, 2806.10], mean 692.65, std 647.33 (Safe mean: 118.34 ppm, Unsafe mean: 938.78 ppm).
+  3. `Turbidity_NTU`: `float64` — Nephelometric Turbidity Units (cloudiness). Range [0.00, 72.75], mean 11.31, std 9.87 (Safe mean: 1.27 NTU, Unsafe mean: 15.61 NTU).
+  4. `Temperature_C`: `float64` — Water temperature in Celsius. Range [16.56, 31.51], mean 24.88, std 2.69.
   5. `Label`: `object` — Ground truth potability string (`Safe`, `Unsafe`).
 - **Data Quality Audit**:
   - Null / Missing values: **0** across all 5 columns.
@@ -43,8 +44,9 @@
     - `Safe`: 30,240 samples (30.00%)
     - Imbalance Ratio: **2.333 : 1** (Unsafe to Safe).
 - **Block Layout in CSV**:
-  - Rows 0 to 70,559: all `Unsafe` (70,560 rows).
-  - Rows 70,560 to 100,799: all `Safe` (30,240 rows).
+  - Rows 0 to 30,239: all `Safe` (30,240 rows).
+  - Rows 30,240 to 100,799: all `Unsafe` (70,560 rows).
+  - Exact class transition index: **Row 30240** (Safe ends at 30239, Unsafe begins at 30240).
   - *Audit Finding*: Sequential batching without shuffling causes severe train/test distribution shift. All evaluations strictly use stratified random shuffling (`shuffle=True`, `stratify=y`).
 - **Critical Structural Constraints (Verified Facts)**:
   - **No Timestamp**: There is **no timestamp column** in this dataset. The task is strictly cross-sectional classification. Temporal lag features, rolling windows, and forecasting (e.g. "deterioration in 20 minutes") are physically and methodologically invalid and prohibited.
@@ -85,6 +87,10 @@ Executed using `StratifiedKFold(n_splits=5, shuffle=True, random_state=42)` on t
 | **Decision Tree** (`max_depth=5`) | 0.999891 ± 0.000065 | 0.999870 ± 0.000077 | 0.999802 ± 0.000181 | 0.999929 ± 0.000050 | 0.999835 ± 0.000117 | 0.999915 ± 0.000078 |
 | **Random Forest** (`n=100, depth=8`) | **0.999950 ± 0.000035** | **0.999941 ± 0.000042** | 0.999934 ± 0.000091 | **0.999957 ± 0.000063** | 0.999901 ± 0.000147 | 0.999972 ± 0.000039 |
 | **Dummy (Most Frequent)** | 0.700000 ± 0.000000 | 0.411765 ± 0.000000 | 0.000000 ± 0.000000 | 1.000000 ± 0.000000 | 0.000000 ± 0.000000 | 0.700000 ± 0.000000 |
+
+> [!NOTE]
+> **Phase 4.1 Methodological Recomputation**:
+> While the table above shows the initial exploratory 5-fold CV across the entire dataset, Phase 4.1 audited and recomputed 5-fold Stratified CV **strictly on the 80% training partition ($N=80,640$)** to guarantee 100% isolation of the 20% test partition. The recomputed results (Decision Tree CV Accuracy = $0.999864 \pm 0.000081$, Random Forest CV Accuracy = $0.999938 \pm 0.000044$) are documented in [`reports/phase4_followup_handoff.md`](file:///d:/E0224033/ML_for_Cl_Ser/CL/LB_Proj/reports/phase4_followup_handoff.md) and [`notebooks/04a_phase4_audit.ipynb`](file:///d:/E0224033/ML_for_Cl_Ser/CL/LB_Proj/notebooks/04a_phase4_audit.ipynb).
 
 ### 4.3 Test Set Performance (20,160 Unseen Samples)
 

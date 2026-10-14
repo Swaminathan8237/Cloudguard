@@ -78,7 +78,7 @@ def find_dataset() -> Path:
 # ---------------------------------------------------------------------------
 def run_stratified_cv(X, y):
     print("\n" + "="*70)
-    print("1. RUNNING 5-FOLD STRATIFIED CROSS-VALIDATION")
+    print("1. RUNNING 5-FOLD STRATIFIED CROSS-VALIDATION ON TRAINING PARTITION (N=80,640)")
     print("="*70)
     
     skf = StratifiedKFold(n_splits=5, shuffle=True, random_state=42)
@@ -474,8 +474,9 @@ def main():
         X, y, test_size=0.20, random_state=42, stratify=y
     )
     
-    # 1. Cross Validation
-    cv_df = run_stratified_cv(X, y)
+    # 1. Cross Validation strictly on the 80% Training Partition (N=80,640)
+    # The 20% test partition (N=20,160) is strictly reserved for independent final evaluation.
+    cv_df = run_stratified_cv(X_train, y_train)
     
     # 2. Test Set Evaluation & Error Analysis
     test_df, trained_dict = evaluate_test_set_and_errors(X_train, X_test, y_train, y_test)

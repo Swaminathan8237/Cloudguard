@@ -40,18 +40,18 @@ The Phase 3 baseline model artifacts in [`models/`](file:///d:/E0224033/ML_for_C
 
 ## 2. Stratified 5-Fold Cross-Validation
 
-To verify that model performance does not depend on a favorable 80/20 train/test split, we ran a 5-fold Stratified Cross-Validation (`StratifiedKFold(n_splits=5, shuffle=True, random_state=42)`).
+To verify that model performance does not depend on a favorable 80/20 train/test split, we ran a 5-fold Stratified Cross-Validation (`StratifiedKFold(n_splits=5, shuffle=True, random_state=42)`) **strictly on the 80% training partition ($N=80,640$)**, completely preserving the 20% test partition ($N=20,160$) as an isolated evaluation benchmark.
 
 To guarantee strict isolation against data leakage, feature scaling (`StandardScaler`) was fitted strictly on each training fold inside a scikit-learn `Pipeline`.
 
-### 2.1 Cross-Validation Performance Summary (5 Folds)
+### 2.1 Cross-Validation Performance Summary (5 Folds on Training Partition)
 
 | Model Architecture | Accuracy (Mean ± Std) | Macro F1 (Mean ± Std) | Safe Recall (Class 0) | Unsafe Recall (Class 1) |
 | :--- | :---: | :---: | :---: | :---: |
-| **Logistic Regression** (Pipeline) | 0.999762 ± 0.000124 | 0.999717 ± 0.000147 | **1.000000 ± 0.000000** | 0.999660 ± 0.000176 |
-| **Decision Tree** (`max_depth=5`) | 0.999891 ± 0.000065 | 0.999870 ± 0.000077 | 0.999802 ± 0.000181 | 0.999929 ± 0.000050 |
-| **Random Forest** (`n=100, depth=8`) | **0.999950 ± 0.000035** | **0.999941 ± 0.000042** | 0.999934 ± 0.000091 | **0.999957 ± 0.000063** |
-| **Dummy (Most Frequent)** | 0.700000 ± 0.000000 | 0.411765 ± 0.000000 | 0.000000 ± 0.000000 | 1.000000 ± 0.000000 |
+| **Logistic Regression** (Pipeline) | 0.999678 ± 0.000148 | 0.999616 ± 0.000176 | **1.000000 ± 0.000000** | 0.999539 ± 0.000211 |
+| **Decision Tree** (`max_depth=5`) | 0.999864 ± 0.000081 | 0.999838 ± 0.000096 | 0.999793 ± 0.000146 | 0.999894 ± 0.000074 |
+| **Random Forest** (`n=100, depth=8`) | **0.999938 ± 0.000044** | **0.999926 ± 0.000052** | 0.999876 ± 0.000185 | **0.999965 ± 0.000049** |
+| **Dummy (Most Frequent)** | 0.700000 ± 0.000034 | 0.411765 ± 0.000012 | 0.000000 ± 0.000000 | 1.000000 ± 0.000000 |
 
 ### 2.2 Key Findings on Stability:
 - **Rock-Solid Convergence**: Standard deviations across all 5 folds are on the order of $10^{-5}$ to $10^{-4}$.
@@ -84,10 +84,15 @@ Visual reference: [`reports/figures/dummy_vs_models_comparison.png`](file:///d:/
 Why did all three independent architectures (linear, single tree, ensemble) reach ~99.99% accuracy?
 
 ### 4.1 Discovery of the Underlying Physical Threshold Rule
-We tested the hypothesis that the dataset labels were assigned in accordance with standardized water safety guidelines (WHO / EPA / Indian Standard IS 10500):
+We tested the hypothesis that the dataset labels were assigned in accordance with an empirical threshold rule derived from common water monitoring conventions:
 - **TDS Threshold**: $\le 211.0\,\text{ppm}$
 - **Turbidity Threshold**: $\le 4.45\,\text{NTU}$
 - **pH Acceptable Range**: $6.5 \le \text{pH} \le 7.8$
+
+> [!CAUTION]
+> **Distinction Between Empirical Rule and Statutory Standards**:
+> 1. The exact cutoffs ($TDS \le 211.0$ ppm, $\text{Turbidity} \le 4.45$ NTU, $6.5 \le \text{pH} \le 7.8$) are **strictly empirical artifacts** of this dataset's label generation methodology. They must **not** be attributed to WHO, US EPA, or Bureau of Indian Standards (BIS IS 10500), which enforce different criteria (e.g., BIS allows 500–2,000 ppm TDS, and 1–5 NTU turbidity).
+> 2. **Physical Scope Limitation**: A 4-feature physical sensor suite (pH, TDS, Turbidity, Temperature) does **not** test for microbial pathogens (*E. coli*, coliforms) or heavy metals (lead, arsenic). The ML model predicts label adherence for these 4 parameters, but does not certify complete drinking water safety.
 
 **Empirical Result**:
 - Exact matches with this single rule: **100,786 / 100,800 samples (99.9861%)**.
@@ -114,8 +119,9 @@ All 14 edge cases belong to the `Unsafe` block in the CSV:
 | **60337** | 6.93 | 203.9 | 3.65 | 23.17 | Unsafe | Safe | Boundary threshold |
 
 ### 4.3 Block Ordering in CSV
-- Rows 0 to 70,559: `Unsafe` (70,560 rows)
-- Rows 70,560 to 100,799: `Safe` (30,240 rows)
+- Rows 0 to 30,239: `Safe` (30,240 rows)
+- Rows 30,240 to 100,799: `Unsafe` (70,560 rows)
+- Exact class transition occurs at **Index 30240** (Row 30239 is `Safe`, Row 30240 is `Unsafe`).
 - If evaluation were performed using sequential chunking without shuffling, train and test sets would have completely disjoint classes. However, `train_test_split(..., shuffle=True, stratify=y)` and `StratifiedKFold(..., shuffle=True)` randomize row order, preventing ordering leakage while preserving class proportions.
 
 ### 4.4 Generalization & Operational Scope Limitations
