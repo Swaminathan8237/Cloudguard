@@ -1,4 +1,10 @@
 {
     "python.defaultInterpreterPath": "C:\\Users\\Swaminathan\\AppData\\Local\\Programs\\Python\\Python310\\python.exe",
-    "python.terminal.activateEnvironment": true
+    "python.terminal.activateEnvironment": true,
+    "python.analysis.extraPaths": [
+        "C:\\Users\\Swaminathan\\AppData\\Local\\Programs\\Python\\Python310\\lib\\site-packages"
+    ],
+    "python.autoComplete.extraPaths": [
+        "C:\\Users\\Swaminathan\\AppData\\Local\\Programs\\Python\\Python310\\lib\\site-packages"
+    ]
 }
