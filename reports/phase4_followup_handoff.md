@@ -53,7 +53,7 @@ Both `data/water_quality_dataset1.csv` and its clean backup twin `data/water_qua
 
 A line-by-line inspection of the `Label` column reveals:
 - **Rows 0 to 30,239**: Exactly 30,240 contiguous observations labelled **`Safe`**.
-  - Row 0: `pH=7.38`, `TDS_ppm=138.7`, `Turbidity_NTU=0.25`, `Temperature_C=21.55`, `Label=Safe`
+  - Row 0: `pH=7.38`, `TDS_ppm=138.7`, `Turbidity_NTU=0.25`, `Temperature_C=20.25`, `Label=Safe`
   - Row 30239: `pH=7.47`, `TDS_ppm=87.5`, `Turbidity_NTU=0.48`, `Temperature_C=17.74`, `Label=Safe`
 - **Rows 30,240 to 100,799**: Exactly 70,560 contiguous observations labelled **`Unsafe`**.
   - Row 30240: `pH=6.89`, `TDS_ppm=370.1`, `Turbidity_NTU=11.13`, `Temperature_C=22.25`, `Label=Unsafe`

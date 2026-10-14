@@ -1,0 +1,48 @@
+================================================================================
+CloudGuard-Water: Decision Tree Full Architecture & Learned Rules
+Model: DecisionTreeClassifier(max_depth=5, random_state=42)
+Actual Depth: 5 | Leaves: 14 | Total Nodes: 27
+Class Encoding: 0 = Safe, 1 = Unsafe
+Feature Order: ['pH', 'TDS_ppm', 'Turbidity_NTU', 'Temperature_C']
+================================================================================
+
+|--- TDS_ppm <= 202.75
+|   |--- Turbidity_NTU <= 4.49
+|   |   |--- Turbidity_NTU <= 4.42
+|   |   |   |--- TDS_ppm <= 202.35
+|   |   |   |   |--- Turbidity_NTU <= 3.56
+|   |   |   |   |   |--- class: 0
+|   |   |   |   |--- Turbidity_NTU >  3.56
+|   |   |   |   |   |--- class: 0
+|   |   |   |--- TDS_ppm >  202.35
+|   |   |   |   |--- Turbidity_NTU <= 3.61
+|   |   |   |   |   |--- class: 0
+|   |   |   |   |--- Turbidity_NTU >  3.61
+|   |   |   |   |   |--- class: 1
+|   |   |--- Turbidity_NTU >  4.42
+|   |   |   |--- TDS_ppm <= 183.95
+|   |   |   |   |--- class: 0
+|   |   |   |--- TDS_ppm >  183.95
+|   |   |   |   |--- class: 1
+|   |--- Turbidity_NTU >  4.49
+|   |   |--- class: 1
+|--- TDS_ppm >  202.75
+|   |--- TDS_ppm <= 209.15
+|   |   |--- Turbidity_NTU <= 3.91
+|   |   |   |--- Turbidity_NTU <= 3.50
+|   |   |   |   |--- class: 0
+|   |   |   |--- Turbidity_NTU >  3.50
+|   |   |   |   |--- TDS_ppm <= 205.50
+|   |   |   |   |   |--- class: 1
+|   |   |   |   |--- TDS_ppm >  205.50
+|   |   |   |   |   |--- class: 0
+|   |   |--- Turbidity_NTU >  3.91
+|   |   |   |--- class: 1
+|   |--- TDS_ppm >  209.15
+|   |   |--- TDS_ppm <= 211.05
+|   |   |   |--- Turbidity_NTU <= 3.35
+|   |   |   |   |--- class: 0
+|   |   |   |--- Turbidity_NTU >  3.35
+|   |   |   |   |--- class: 1
+|   |   |--- TDS_ppm >  211.05
+|   |   |   |--- class: 1
