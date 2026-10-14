@@ -259,12 +259,22 @@ def get_feature_importances(model: Any) -> pd.DataFrame:
     return df.sort_values(by="Importance", ascending=False).reset_index(drop=True)
 
 
-def generate_human_explanation(explanation_dict: Dict[str, Any]) -> str:
+def generate_human_explanation(
+    explanation_dict: Dict[str, Any],
+    actual_label: Optional[str] = None,
+) -> str:
     """
     Format an extracted decision path dictionary into a structured, human-readable report.
+    Guarantees rigorous scientific wording:
+      - Predictions are explicitly identified as statistical model classifications, NOT safety certifications.
+      - A 'Safe' prediction never claims water is safe to drink or complies with official standards.
+      - Probabilities are explicitly labeled as estimated empirical training proportions, not guarantees.
+      - Retrospective false negatives are clearly highlighted and explained as model classification errors.
+      - Explicitly states that laboratory testing and statutory standards remain necessary to establish actual potability.
 
     Args:
         explanation_dict: Output dictionary from extract_decision_path.
+        actual_label: Optional ground truth string ('Safe' or 'Unsafe') for retrospective auditing.
 
     Returns:
         str: Formatted multi-line human-readable explanation.
@@ -278,13 +288,13 @@ def generate_human_explanation(explanation_dict: Dict[str, Any]) -> str:
     features_used = list(dict.fromkeys([s["feature"] for s in steps]))
 
     lines = []
-    lines.append(f"Prediction: {pred_class.upper()}")
+    lines.append(f"Model Classification: {pred_class.upper()} (Statistical Prediction — Not a Potability Certification)")
     lines.append("")
-    lines.append("Model Probabilities:")
-    lines.append(f"  - Safe  : {probas['Safe'] * 100:.2f}%")
-    lines.append(f"  - Unsafe: {probas['Unsafe'] * 100:.2f}%")
+    lines.append("Estimated Model Probabilities (Empirical Training Proportions — Not Guarantees):")
+    lines.append(f"  - Estimated P(Safe)  : {probas['Safe'] * 100:.2f}%")
+    lines.append(f"  - Estimated P(Unsafe): {probas['Unsafe'] * 100:.2f}%")
     lines.append("")
-    lines.append("Decision Path Explanation:")
+    lines.append("Decision Path Traversal:")
     lines.append(f"  Traversed {len(steps)} decision node(s) to Leaf Node #{leaf_id}:")
     for i, s in enumerate(steps, 1):
         lines.append(f"    {i}. {s['rule']} (Split at node #{s['node_id']})")
@@ -292,16 +302,54 @@ def generate_human_explanation(explanation_dict: Dict[str, Any]) -> str:
     lines.append("")
     lines.append(f"Primary Influencing Features: {', '.join(features_used)}")
     lines.append("")
-    lines.append("Operational Recommendation:")
-    if pred_class == "Unsafe":
+
+    # Check for retrospective ground-truth discrepancy
+    if actual_label is not None:
+        actual_norm = actual_label.strip().capitalize()
+        pred_norm = pred_class.strip().capitalize()
+        if actual_norm != pred_norm:
+            lines.append("Retrospective Error Analysis:")
+            if actual_norm == "Unsafe" and pred_norm == "Safe":
+                lines.append(
+                    f"  ALERT: KNOWN MODEL FALSE NEGATIVE (Ground Truth: '{actual_norm}' vs Model: '{pred_norm}')."
+                )
+                lines.append(
+                    f"  Explanation: All 4 measured physical features fall within the model's learned 'Safe' envelope "
+                    f"(Leaf Node #{leaf_id}, where {probas['Safe'] * 100:.2f}% of training samples were labeled Safe). "
+                    f"However, the actual ground truth for this sample is Unsafe. This demonstrates a critical limitation: "
+                    f"relying solely on physical sensor measurements (pH, TDS, turbidity, temperature) can produce "
+                    f"dangerous false negatives when water contamination is driven by unmeasured factors (such as "
+                    f"microbial pathogens, heavy metals, or dataset boundary noise)."
+                )
+            else:
+                lines.append(
+                    f"  NOTICE: MODEL FALSE POSITIVE (Ground Truth: '{actual_norm}' vs Model: '{pred_norm}')."
+                )
+                lines.append(
+                    f"  Explanation: The model classified this observation conservatively as Unsafe based on learned "
+                    f"thresholds, exceeding ground-truth label criteria."
+                )
+            lines.append("")
+
+    lines.append("Operational Recommendation & Safety Notice:")
+    if actual_label is not None and actual_label.strip().capitalize() == "Unsafe" and pred_class.strip().capitalize() == "Safe":
         lines.append(
-            "  CAUTION: The water sample violates physical sensor potability thresholds. "
-            "Further laboratory microbiological and chemical assessment is required before consumption."
+            "  ACTION REQUIRED: Do NOT treat this water as potable. Because ground truth indicates contamination, "
+            "the model classification is overruled. Comprehensive laboratory microbiological, toxicological, and "
+            "chemical testing is strictly required before any consumption."
+        )
+    elif pred_class == "Unsafe":
+        lines.append(
+            "  WARNING: Physical sensor readings exceed the model's learned thresholds for potable classification. "
+            "Do NOT consume this water. Further laboratory testing and corrective water treatment are required."
         )
     else:
         lines.append(
-            "  NORMAL: Physical sensor parameters adhere to acceptable guidelines. "
-            "Note that physical sensors do not detect microbial pathogens or chemical toxins."
+            "  ADVISORY: Measured physical sensor values fall within the model's learned classification envelope. "
+            "However, this statistical classification does NOT certify potability or consumption safety, nor does it establish "
+            "compliance with statutory drinking-water standards (such as WHO, US EPA, or BIS IS 10500). Physical sensors cannot detect "
+            "microbial pathogens (e.g., E. coli, Salmonella), toxic heavy metals (arsenic, lead, mercury), or organic chemical "
+            "pollutants. Comprehensive certified laboratory testing remains strictly necessary to establish actual drinking-water potability."
         )
 
     return "\n".join(lines)
@@ -310,6 +358,7 @@ def generate_human_explanation(explanation_dict: Dict[str, Any]) -> str:
 def explain_sample(
     model: Any,
     features: Union[Dict[str, float], pd.DataFrame, List[float], np.ndarray],
+    actual_label: Optional[str] = None,
 ) -> Dict[str, Any]:
     """
     End-to-end convenience function to validate an input sample, compute model
@@ -319,11 +368,14 @@ def explain_sample(
     Args:
         model: Trained model (typically DecisionTreeClassifier).
         features: Input feature data.
+        actual_label: Optional ground truth string ('Safe' or 'Unsafe') for retrospective auditing.
 
     Returns:
         Dict with keys:
           - input_features: Dict of input features
           - predicted_class: 'Safe' or 'Unsafe'
+          - actual_label: Optional ground truth label
+          - is_classification_error: Boolean flag indicating if prediction disagrees with actual_label
           - probabilities: Dict mapping class names to probabilities
           - decision_path: Extracted path dict (if DecisionTreeClassifier)
           - human_explanation: Formatted multi-line explanation text
@@ -333,10 +385,16 @@ def explain_sample(
 
     if isinstance(model, DecisionTreeClassifier):
         path_info = extract_decision_path(model, validated_df)
-        human_text = generate_human_explanation(path_info)
+        human_text = generate_human_explanation(path_info, actual_label=actual_label)
+        is_error = False
+        if actual_label is not None:
+            is_error = (actual_label.strip().capitalize() != path_info["predicted_class"].strip().capitalize())
+
         return {
             "input_features": sample_dict,
             "predicted_class": path_info["predicted_class"],
+            "actual_label": actual_label,
+            "is_classification_error": is_error,
             "probabilities": path_info["probabilities"],
             "decision_path": path_info,
             "human_explanation": human_text,
@@ -346,20 +404,26 @@ def explain_sample(
         _, probas, labels = predict_with_probabilities(model, validated_df)
         p_safe, p_unsafe = float(probas[0, 0]), float(probas[0, 1])
         pred_label = labels[0]
+        is_error = False
+        if actual_label is not None:
+            is_error = (actual_label.strip().capitalize() != pred_label.strip().capitalize())
 
         summary_lines = [
-            f"Prediction: {pred_label.upper()}",
+            f"Model Classification: {pred_label.upper()} (Statistical Prediction — Not a Potability Certification)",
             "",
-            "Model Probabilities:",
-            f"  - Safe  : {p_safe * 100:.2f}%",
-            f"  - Unsafe: {p_unsafe * 100:.2f}%",
+            "Estimated Model Probabilities (Empirical Training Proportions — Not Guarantees):",
+            f"  - Estimated P(Safe)  : {p_safe * 100:.2f}%",
+            f"  - Estimated P(Unsafe): {p_unsafe * 100:.2f}%",
             "",
-            "Note: Ensemble/Linear model does not produce a single deterministic decision path.",
-            "Use TreeExplainer / SHAP for feature attribution decomposition.",
+            "Operational Recommendation & Safety Notice:",
+            "  ADVISORY: Statistical ensemble model classification does not certify potability or consumption safety. "
+            "Certified laboratory testing remains strictly necessary to establish actual drinking-water potability.",
         ]
         return {
             "input_features": sample_dict,
             "predicted_class": pred_label,
+            "actual_label": actual_label,
+            "is_classification_error": is_error,
             "probabilities": {"Safe": p_safe, "Unsafe": p_unsafe},
             "decision_path": None,
             "human_explanation": "\n".join(summary_lines),

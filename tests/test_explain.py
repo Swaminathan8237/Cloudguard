@@ -142,17 +142,57 @@ class TestExplainModule(unittest.TestCase):
         self.assertEqual(first_step["direction"], "right")
         self.assertGreater(first_step["value"], first_step["threshold"])
 
-    def test_generate_human_explanation(self):
-        """Verify human explanation text contains prediction, probabilities, and rules."""
+    def test_generate_human_explanation_safe(self):
+        """Verify human explanation text for Safe predictions uses non-certifying, probabilistic wording."""
         df = validate_input(self.safe_sample_dict)
         res = extract_decision_path(self.dt, df)
         text = generate_human_explanation(res)
 
-        self.assertIn("Prediction: SAFE", text)
-        self.assertIn("Model Probabilities:", text)
-        self.assertIn("Decision Path Explanation:", text)
-        self.assertIn("TDS_ppm", text)
-        self.assertIn("Operational Recommendation:", text)
+        # Explicitly identified as model classification, not certification
+        self.assertIn("Model Classification: SAFE", text)
+        self.assertIn("Statistical Prediction — Not a Potability Certification", text)
+
+        # Probabilities described as estimated training proportions, not guarantees
+        self.assertIn("Estimated Model Probabilities (Empirical Training Proportions — Not Guarantees):", text)
+        self.assertIn("Estimated P(Safe)", text)
+
+        # NEVER produce unsupported claims
+        self.assertNotIn("water is safe to drink", text.lower())
+        self.assertNotIn("parameters comply with official guidelines", text.lower())
+        self.assertNotIn("normal:", text)
+
+        # Explicitly state laboratory testing and statutory standards are necessary
+        self.assertIn("laboratory testing", text.lower())
+        self.assertIn("statutory drinking-water standards", text.lower())
+
+    def test_generate_human_explanation_unsafe(self):
+        """Verify human explanation text for Unsafe predictions produces warning and testing recommendation."""
+        df = validate_input(self.unsafe_sample_dict)
+        res = extract_decision_path(self.dt, df)
+        text = generate_human_explanation(res)
+
+        self.assertIn("Model Classification: UNSAFE", text)
+        self.assertIn("WARNING:", text)
+        self.assertIn("laboratory testing", text.lower())
+
+    def test_known_retrospective_false_negative_explanation(self):
+        """
+        Verify that a known retrospective false-negative (Row 55037: actual Unsafe, predicted Safe)
+        is explicitly flagged and explained as a model error rather than giving a safe advisory.
+        """
+        fn_sample = {"pH": 7.05, "TDS_ppm": 192.3, "Turbidity_NTU": 3.95, "Temperature_C": 24.26}
+        out = explain_sample(self.dt, fn_sample, actual_label="Unsafe")
+
+        self.assertEqual(out["predicted_class"], "Safe")
+        self.assertEqual(out["actual_label"], "Unsafe")
+        self.assertTrue(out["is_classification_error"])
+
+        text = out["human_explanation"]
+        self.assertIn("ALERT: KNOWN MODEL FALSE NEGATIVE", text)
+        self.assertIn("Ground Truth: 'Unsafe' vs Model: 'Safe'", text)
+        self.assertIn("ACTION REQUIRED: Do NOT treat this water as potable", text)
+        self.assertIn("laboratory microbiological", text.lower())
+        self.assertNotIn("advisory: measured physical sensor values fall within", text.lower())
 
     def test_explain_sample_end_to_end(self):
         """Verify end-to-end explain_sample convenience function."""
@@ -161,7 +201,7 @@ class TestExplainModule(unittest.TestCase):
         self.assertIn("Safe", out["probabilities"])
         self.assertIn("Unsafe", out["probabilities"])
         self.assertIsNotNone(out["decision_path"])
-        self.assertIn("Prediction: SAFE", out["human_explanation"])
+        self.assertIn("Model Classification: SAFE", out["human_explanation"])
 
     def test_get_feature_importances(self):
         """Verify feature importances are extracted, non-negative, and sum to 100%."""

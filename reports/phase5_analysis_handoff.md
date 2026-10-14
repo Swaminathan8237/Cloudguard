@@ -72,7 +72,7 @@ All models reside under `models/` and were trained in Phase 3 on the 80% trainin
 | [`src/explain.py`](file:///d:/E0224033/ML_for_Cl_Ser/CL/LB_Proj/src/explain.py) | Python 3.10 Module | Production explainability engine: input validation, path traversal, probability extraction, narrative generation. Verified with 0 Pyright errors. |
 | [`src/generate_phase5_artifacts.py`](file:///d:/E0224033/ML_for_Cl_Ser/CL/LB_Proj/src/generate_phase5_artifacts.py) | Python 3.10 Script | Pipeline generating SHAP scores, local explanations, sensitivity curves, and figures. |
 | [`src/create_phase5_notebook.py`](file:///d:/E0224033/ML_for_Cl_Ser/CL/LB_Proj/src/create_phase5_notebook.py) | Python 3.10 Script | Automated builder and executor for `notebooks/05_phase5_explainability.ipynb`. |
-| [`tests/test_explain.py`](file:///d:/E0224033/ML_for_Cl_Ser/CL/LB_Proj/tests/test_explain.py) | Python Unit Tests | 15 automated test cases covering model loading, input validation, path extraction, probabilities, and formatting. **15/15 passed.** |
+| [`tests/test_explain.py`](file:///d:/E0224033/ML_for_Cl_Ser/CL/LB_Proj/tests/test_explain.py) | Python Unit Tests | 17 automated test cases covering model loading, input validation, path extraction, empirical probabilities, non-certifying wording, and retrospective false-negative error detection. **17/17 passed.** |
 | [`notebooks/05_phase5_explainability.ipynb`](file:///d:/E0224033/ML_for_Cl_Ser/CL/LB_Proj/notebooks/05_phase5_explainability.ipynb) | Jupyter Notebook | Complete, self-contained interactive notebook with all 15 required sections, markdown discussions, and pre-rendered outputs. |
 | [`reports/decision_tree_rules.txt`](file:///d:/E0224033/ML_for_Cl_Ser/CL/LB_Proj/reports/decision_tree_rules.txt) | Text File | Complete textual export of all 14 leaf decision paths and thresholds. |
 | [`reports/random_forest_shap_importance.csv`](file:///d:/E0224033/ML_for_Cl_Ser/CL/LB_Proj/reports/random_forest_shap_importance.csv) | CSV Data | Numerical SHAP values across 1,000 stratified training samples. |
@@ -122,7 +122,7 @@ All models reside under `models/` and were trained in Phase 3 on the 80% trainin
    - Predictions: DT = `Safe` ($P=0.9948$), RF = `Safe` ($P=0.7800$)
    - Decision path: Traversed to Leaf Node #6 ($P(\text{Safe}) = 0.9948, P(\text{Unsafe}) = 0.0052$).
    - RF SHAP values: $TDS=-0.5443$ (strongly pulls toward Safe), $\text{Turbidity}=+0.0613$, $\text{Temp}=+0.0072$, $pH=-0.0044$.
-   - *Technical Explanation*: The physical sensor values fall entirely inside the potable envelope ($TDS < 211.05$, $\text{Turbidity} < 4.49$). The model correctly followed its physical rules; the misclassification is an artifact of label boundary noise in the dataset generator.
+   - *Technical Explanation & Corrected Recommendation Logic*: The physical sensor values fall entirely inside the learned potable envelope ($TDS < 211.05$, $\text{Turbidity} < 4.49$). While the Decision Tree rationally assigns an estimated 99.48% probability of Safe based on empirical training leaf proportions, the newly corrected explainability logic explicitly identifies predictions as statistical model classifications rather than drinking-water safety certifications. Furthermore, when evaluated retrospectively against ground truth, the system flags this sample as an `ALERT: KNOWN MODEL FALSE NEGATIVE`, explains that unmeasured contaminants (such as pathogens or heavy metals) or boundary noise account for the discrepancy, and replaces any default normal recommendation with an `ACTION REQUIRED` notice stating that laboratory microbiological, toxicological, and chemical testing is strictly required before considering the water potable.
 
 ### 5.4 Decision-Boundary Sensitivity Findings
 - **TDS Threshold Sweep (205.0 to 216.0 ppm)**:
@@ -139,12 +139,14 @@ All models reside under `models/` and were trained in Phase 3 on the 80% trainin
 1. Both `data/water_quality_dataset1.csv` and `data/water_quality_dataset1_original.csv` share identical byte sizes (2,964,409 bytes) and SHA-256 checksums (`90f9c7cb...`).
 2. The Decision Tree rules rely almost exclusively on $TDS \le 211.05$ and $\text{Turbidity} \le 4.49$.
 3. The Decision Tree achieves identical test accuracy (99.990%) and unsafe recall (99.993%) to the 100-tree Random Forest, with $50\times$ lower latency and full transparency.
-4. All 15 unit tests pass in `tests/test_explain.py`.
+4. All 17 unit tests pass in `tests/test_explain.py`.
 
 ### Critical Caveats & Non-Claims:
-1. **No Complete Drinking Water Safety Certification**: Physical sensors measuring pH, TDS, Turbidity, and Temperature do NOT test for microbiological organisms (*E. coli*, viruses) or toxic heavy metals (arsenic, lead).
-2. **No Claim of Causation**: Feature importance and SHAP attribution indicate statistical association within this dataset, not physical causation.
-3. **No Official Standards Attribution**: The exact numeric thresholds (211.05 ppm TDS, 4.49 NTU Turbidity) are **empirical artifacts of this dataset's labeling rule**, not statutory standards of WHO, US EPA, or Bureau of Indian Standards (BIS IS 10500).
+1. **Explicit Non-Certification**: Model classifications are statistical predictions based on 4 physical sensor inputs. A `Safe` prediction never produces unsupported claims that "water is safe to drink" or "parameters comply with official guidelines."
+2. **Empirical Probabilities vs. Guarantees**: Model probabilities represent empirical leaf proportions from training data, never absolute guarantees of potability.
+3. **No Detection of Biological or Chemical Toxins**: Physical sensors measuring pH, TDS, Turbidity, and Temperature do NOT test for microbiological organisms (*E. coli*, viruses) or toxic heavy metals (arsenic, lead). Certified laboratory testing and applicable statutory water-quality standards (WHO, US EPA, BIS IS 10500) remain strictly necessary to establish actual drinking-water potability.
+4. **No Claim of Causation**: Feature importance and SHAP attribution indicate statistical association within this dataset, not physical causation.
+5. **No Official Standards Attribution**: The exact numeric thresholds (211.05 ppm TDS, 4.49 NTU Turbidity) are **empirical artifacts of this dataset's labeling rule**, not statutory standards of WHO, US EPA, or Bureau of Indian Standards (BIS IS 10500).
 
 ---
 

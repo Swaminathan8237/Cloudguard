@@ -24,13 +24,13 @@ Phase 5 delivers a transparent, mathematically grounded, and production-ready **
    - Evaluated representative samples from the canonical dataset and held-out test partition:
      - **Safe Conforming (Row 0)**: $pH=7.38, TDS=138.7, Turbidity=0.25, Temp=20.25^\circ\text{C}$ $\to$ Classified as **Safe (100.00%)** via 5 consecutive sub-threshold comparisons.
      - **Unsafe Contaminated (Row 30240)**: $pH=6.89, TDS=370.1, Turbidity=11.13, Temp=22.25^\circ\text{C}$ $\to$ Classified as **Unsafe (100.00%)** via root split $TDS > 202.75$ and terminal split $TDS > 211.05$.
-     - **Borderline False Negative (Row 55037)**: $pH=7.05, TDS=192.3, Turbidity=3.95, Temp=24.26^\circ\text{C}$ $\to$ Ground truth `Unsafe`, but model predicts `Safe` ($P(\text{Safe})=99.48\%$). The decision path reveals why: all 4 measurements fall inside the physical potable envelope; in the training data, 99.48% of samples reaching Leaf #6 were Safe.
+      - **Borderline False Negative (Row 55037)**: $pH=7.05, TDS=192.3, Turbidity=3.95, Temp=24.26^\circ\text{C}$ $\to$ Ground truth `Unsafe`, but model predicts `Safe` ($P(\text{Safe})=99.48\%$). The explainability engine identifies this as a statistical classification (not a potability certification) and automatically triggers a retrospective `ALERT: KNOWN MODEL FALSE NEGATIVE` with an `ACTION REQUIRED` advisory requiring comprehensive certified laboratory testing because physical sensors alone cannot detect microbial pathogens, toxic heavy metals, or dataset boundary noise.
 4. **Decision-Boundary Sensitivity**:
    - Perturbing TDS across 205.0 to 216.0 ppm demonstrates a deterministic step switch in the Decision Tree at **211.05 ppm**, whereas the Random Forest exhibits a smooth, sigmoidal probability transition between 208 and 214 ppm.
    - Perturbing Turbidity across 4.20 to 4.70 NTU reveals a step transition at **4.49 NTU**.
-5. **Reusable Code Module**:
-   - Implemented [`src/explain.py`](file:///d:/E0224033/ML_for_Cl_Ser/CL/LB_Proj/src/explain.py) with input validation, path traversal, probability extraction, and human-readable narrative synthesis.
-   - Validated by 15 automated unit tests in [`tests/test_explain.py`](file:///d:/E0224033/ML_for_Cl_Ser/CL/LB_Proj/tests/test_explain.py) (100% pass rate).
+5. **Reusable Code Module & Defensive Safety Logic**:
+   - Implemented [`src/explain.py`](file:///d:/E0224033/ML_for_Cl_Ser\CL\LB_Proj\src\explain.py) with input validation, path traversal, empirical probability extraction, non-certifying advisory wording, and retrospective error detection.
+   - Validated by 17 automated unit tests in [`tests/test_explain.py`](file:///d:/E0224033/ML_for_Cl_Ser\CL\LB_Proj\tests\test_explain.py) (100% pass rate).
 
 ---
 
@@ -132,8 +132,15 @@ We audited three representative observations from the canonical dataset and held
 Row 55037 was the single Unsafe observation misclassified as Safe in the 20,160-sample test set. 
 - *Physical Measurements*: pH 7.05 is neutral, TDS 192.3 ppm is well below the 211.05 ppm cutoff, and Turbidity 3.95 NTU is below 4.49 NTU.
 - *Decision Path*: It followed `TDS_ppm <= 202.75` $\to$ `Turbidity_NTU <= 4.49` $\to$ `Turbidity_NTU <= 4.42` $\to$ `TDS_ppm <= 202.35` $\to$ `Turbidity_NTU > 3.56` into Leaf Node #6.
-- *Leaf Distribution*: During training, 99.48% of samples reaching Leaf #6 were `Safe`. The model correctly assigned a 99.48% probability of Safe based on physical rules. The error originates from label noise in the dataset generator, rather than a failure of model logic.
-- Full local explanation table saved in [`reports/local_explanations.csv`](file:///d:/E0224033/ML_for_Cl_Ser/CL/LB_Proj/reports/local_explanations.csv).
+- *Leaf Distribution*: During training, 99.48% of samples reaching Leaf #6 were `Safe`. The model assigned an estimated 99.48% probability of Safe based on empirical training proportions.
+- *Why the Recommendation Logic Was Corrected*:
+  Previously, following the model prediction alone caused the system to output an inappropriate `NORMAL` recommendation. This has been corrected:
+  1. **Model Classification Framing**: Predictions are explicitly identified as statistical model classifications, never as drinking-water safety certifications.
+  2. **Non-Certifying Phrasing**: A `Safe` prediction never produces unsupported wording such as "water is safe to drink" or "parameters comply with official guidelines."
+  3. **Empirical Probabilities**: Probabilities are described as estimated empirical training proportions and not guarantees.
+  4. **Retrospective Error Detection**: Known retrospective discrepancies (actual `Unsafe` vs. predicted `Safe`) are audited and reported as `ALERT: KNOWN MODEL FALSE NEGATIVE`.
+  5. **Mandatory Laboratory Testing Notice**: The operational recommendation overrules the Safe prediction with `ACTION REQUIRED: Do NOT treat this water as potable. Comprehensive laboratory microbiological, toxicological, and chemical testing is strictly required.`
+- Full local explanation table saved in [`reports/local_explanations.csv`](file:///d:/E0224033/ML_for_Cl_Ser\CL\LB_Proj\reports\local_explanations.csv).
 
 ---
 
@@ -152,7 +159,7 @@ Fixed baseline: $pH=7.20$, $TDS=150.0\,\text{ppm}$, $\text{Temperature}=22.00^\c
 - Below **4.42 NTU**: Traverses into Leaf Node #6 ($P(\text{Safe}) = 0.9948$).
 - Between **4.42 and 4.49 NTU**: Traverses into Leaf Node #11 ($P(\text{Safe}) = 1.0000$).
 - At **4.50 NTU and above**: Traverses into Leaf Node #13 ($P(\text{Unsafe}) = 1.0000$).
-- Data saved in [`reports/decision_boundary_sensitivity.csv`](file:///d:/E0224033/ML_for_Cl_Ser/CL/LB_Proj/reports/decision_boundary_sensitivity.csv); curves plotted in [`reports/figures/decision_boundary_sensitivity.png`](file:///d:/E0224033/ML_for_Cl_Ser/CL/LB_Proj/reports/figures/decision_boundary_sensitivity.png).
+- Data saved in [`reports/decision_boundary_sensitivity.csv`](file:///d:/E0224033/ML_for_Cl_Ser\CL\LB_Proj\reports\decision_boundary_sensitivity.csv); curves plotted in [`reports/figures/decision_boundary_sensitivity.png`](file:///d:/E0224033/ML_for_Cl_Ser\CL\LB_Proj\reports\figures\decision_boundary_sensitivity.png).
 
 ---
 
@@ -174,21 +181,23 @@ The newly built module exposes 7 key public functions:
 3. `predict_with_probabilities(model, X)`: Returns class indices, calibrated probabilities, and string labels.
 4. `extract_decision_path(model, sample)`: Deconstructs Decision Tree node traversal into human-auditable steps.
 5. `get_feature_importances(model)`: Returns sorted global feature importance percentages.
-6. `generate_human_explanation(explanation_dict)`: Produces structured multi-line plain English operational summaries.
-7. `explain_sample(model, features)`: End-to-end wrapper combining validation, prediction, path extraction, and report formatting.
+6. `generate_human_explanation(explanation_dict, actual_label=None)`: Produces structured multi-line plain English operational summaries with strict non-certifying language, empirical probability labeling, retrospective false-negative error analysis, and explicit advisories stating that certified laboratory testing (WHO, BIS IS 10500) remains necessary.
+7. `explain_sample(model, features, actual_label=None)`: End-to-end wrapper combining validation, prediction, path extraction, retrospective ground-truth comparison, and report formatting.
 
 ### 7.2 Automated Test Suite (`tests/test_explain.py`)
-We ran the unit test suite across 15 test cases:
+We ran the unit test suite across 17 test cases:
 - Model loading verification and failure handling.
 - Input validation across dicts, DataFrames, and lists.
 - Missing feature, null, NaN, and dimension error rejection.
 - Exact agreement with `model.predict` and `model.predict_proba`.
 - Correct probability mapping ($0 = \text{Safe}, 1 = \text{Unsafe}$).
 - Correct decision path extraction and node threshold comparisons.
-- Formatting of human-readable text.
+- Formatting of human-readable text ensuring non-certifying phrasing and no claims of potability or official compliance.
+- Explicit verification that estimated probabilities are not described as guarantees.
+- Retrospective false-negative detection and error explanation for Row 55037.
 - Feature importance calculations.
 - Artifact preservation check.
-- **Result**: **15 passed in 0.251s (0 failures, 0 errors).**
+- **Result**: **17 passed in 0.249s (0 failures, 0 errors).**
 
 ---
 

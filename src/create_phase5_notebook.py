@@ -110,7 +110,7 @@ print("Checksum matches authoritative Phase 4.1 audit benchmark.")
 
 df = pd.read_csv(data_path)
 print(f"Shape                  : {df.shape[0]:,} rows × {df.shape[1]} columns")
-print(f"Class Breakdown        :\n{df['Label'].value_counts().to_string()}")
+print(f"Class Breakdown        :\\n{df['Label'].value_counts().to_string()}")
 """))
 
     # -----------------------------------------------------------------------
@@ -140,7 +140,7 @@ print(f"  - Actual tree depth     : {dt.get_depth()}")
 print(f"  - Total leaves          : {dt.get_n_leaves()}")
 print(f"  - Total nodes           : {dt.tree_.node_count}")
 
-print("\nSecondary Model (Random Forest Ensemble):")
+print("\\nSecondary Model (Random Forest Ensemble):")
 print(f"  - Model Type            : {type(rf).__name__}")
 print(f"  - n_estimators          : {rf.n_estimators}")
 print(f"  - max_depth parameter   : {rf.max_depth}")
@@ -293,12 +293,12 @@ We examine Row 0 from the canonical dataset, representing potable drinking water
 - `pH`: 7.38
 - `TDS_ppm`: 138.7
 - `Turbidity_NTU`: 0.25
-- `Temperature_C`: 20.25 (corrected from typo)
+- `Temperature_C`: 20.25
 - Ground Truth: `Safe`
 """))
 
     cells.append(nbf.v4.new_code_cell("""safe_sample = df.iloc[0:1][FEATURE_NAMES]
-safe_exp = explain_sample(dt, safe_sample)
+safe_exp = explain_sample(dt, safe_sample, actual_label="Safe")
 
 print(safe_exp["human_explanation"])
 """))
@@ -317,7 +317,7 @@ We examine Row 30240, the exact starting index of the Unsafe partition in the CS
 """))
 
     cells.append(nbf.v4.new_code_cell("""unsafe_sample = df.iloc[30240:30241][FEATURE_NAMES]
-unsafe_exp = explain_sample(dt, unsafe_sample)
+unsafe_exp = explain_sample(dt, unsafe_sample, actual_label="Unsafe")
 
 print(unsafe_exp["human_explanation"])
 """))
@@ -325,7 +325,7 @@ print(unsafe_exp["human_explanation"])
     # -----------------------------------------------------------------------
     # Section 10: Explanation of Borderline / Misclassified Sample
     # -----------------------------------------------------------------------
-    cells.append(nbf.v4.new_markdown_cell("""## 10. Local Explanation: Borderline False Negative
+    cells.append(nbf.v4.new_markdown_cell("""## 10. Local Explanation: Retrospective Error Audit (Row 55037 False Negative)
 
 We examine Row 55037, the single False Negative on the 20,160-sample held-out test partition:
 - `pH`: 7.05
@@ -333,14 +333,15 @@ We examine Row 55037, the single False Negative on the 20,160-sample held-out te
 - `Turbidity_NTU`: 3.95
 - `Temperature_C`: 24.26
 - Ground Truth: `Unsafe`
-- Model Prediction: `Safe` (P(Safe) = 99.48%)
+- Model Prediction: `Safe` (Estimated P(Safe) = 99.48%)
 
-### Why Did the Model Predict Safe?
-All 4 physical measurements fall inside the standard potable envelope ($TDS \\le 211$ ppm, $\\text{Turbidity} \\le 4.45$ NTU, $6.5 \\le pH \\le 7.8$). In the training partition, 99.48% of samples reaching Leaf #6 were labeled `Safe`. The model classified this sample rationally based on its physical rules, highlighting that the misclassification is an artifact of the dataset's empirical boundary noise.
+### Why Did the Model Predict Safe and How Does the System Handle It?
+All 4 physical measurements fall inside the learned potable envelope ($TDS \\le 211$ ppm, $\\text{Turbidity} \\le 4.45$ NTU, $6.5 \\le pH \\le 7.8$). In the training partition, 99.48% of samples reaching Leaf #6 were labeled `Safe`.
+However, because the actual ground truth is `Unsafe`, the model explanation engine triggers an explicit retrospective false-negative alert and overrules the Safe prediction with an `ACTION REQUIRED` advisory requiring comprehensive certified laboratory testing.
 """))
 
     cells.append(nbf.v4.new_code_cell("""borderline_sample = df.iloc[55037:55038][FEATURE_NAMES]
-borderline_exp = explain_sample(dt, borderline_sample)
+borderline_exp = explain_sample(dt, borderline_sample, actual_label="Unsafe")
 
 print(borderline_exp["human_explanation"])
 
@@ -471,10 +472,13 @@ print(result["human_explanation"])
 - [x] Random Forest SHAP values calculated on 1,000 stratified samples and saved to `reports/random_forest_shap_importance.csv`.
 - [x] Local prediction explanations generated for Safe, Unsafe, and Borderline observations in `reports/local_explanations.csv`.
 - [x] Decision boundary sensitivity curves plotted in `reports/figures/decision_boundary_sensitivity.png`.
-- [x] Reusable explainability module `src/explain.py` created and verified with 15 unit tests in `tests/test_explain.py`.
+- [x] Reusable explainability module `src/explain.py` created and verified with 17 unit tests in `tests/test_explain.py`.
 
 **Phase 5 complete.** Standing by for user instruction to proceed to Phase 6 (Cloud Prediction API).
 """))
+
+    # Assign cells to notebook
+    nb.cells = cells
 
     # Write notebook file
     nb_path = NOTEBOOKS_DIR / "05_phase5_explainability.ipynb"

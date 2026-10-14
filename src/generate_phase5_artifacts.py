@@ -243,7 +243,7 @@ def run_phase5_generation():
         idx = s_def["Index"]
         row_feat = X.iloc[idx:idx+1]
         ground_truth = df["Label"].iloc[idx]
-        exp_result = explain_sample(dt, row_feat)
+        exp_result = explain_sample(dt, row_feat, actual_label=ground_truth)
 
         dt_pred = exp_result["predicted_class"]
         p_safe = exp_result["probabilities"]["Safe"]
