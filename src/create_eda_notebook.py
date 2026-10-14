@@ -65,11 +65,35 @@ Load the authoritative dataset and verify that it contains exactly 100,800 rows 
 """))
 
     # Cell 4: Data loading code
-    cells.append(nbf.v4.new_code_cell("""# Locate dataset relative to notebook directory
-data_path = Path("../data/water_quality_dataset1.csv")
-if not data_path.exists():
-    data_path = Path("data/water_quality_dataset1.csv")
+    cells.append(nbf.v4.new_code_cell("""# Robust multi-path locator that works in any environment (VS Code, Jupyter, Google Colab, etc.)
+def find_dataset():
+    candidates = [
+        Path("data/water_quality_dataset1.csv"),
+        Path("../data/water_quality_dataset1.csv"),
+        Path("../../data/water_quality_dataset1.csv"),
+        Path("data/water_quality_dataset1_original.csv"),
+        Path("../data/water_quality_dataset1_original.csv"),
+        Path("Cloudguard/data/water_quality_dataset1.csv"),
+        Path("/content/Cloudguard/data/water_quality_dataset1.csv"),
+        Path("/content/data/water_quality_dataset1.csv"),
+    ]
+    for p in candidates:
+        if p.exists():
+            return p
+    # Search upwards from current working directory
+    curr = Path.cwd().resolve()
+    for parent in [curr] + list(curr.parents):
+        for name in ["water_quality_dataset1.csv", "water_quality_dataset1_original.csv"]:
+            target = parent / "data" / name
+            if target.exists():
+                return target
+            target_direct = parent / name
+            if target_direct.exists():
+                return target_direct
+    raise FileNotFoundError("Could not locate water_quality_dataset1.csv in any standard path.")
 
+data_path = find_dataset()
+print(f"Loaded dataset from: {data_path}")
 df = pd.read_csv(data_path)
 print(f"Dataset Shape: {df.shape[0]:,} rows × {df.shape[1]} columns")
 print(f"Missing Values: {df.isnull().sum().sum()}")

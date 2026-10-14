@@ -40,7 +40,6 @@ venv.bak/
 
 # Local backup / temporary data files
 data/*backup*.csv
-data/*original*.csv
 data/*_backup.*
 *.tmp
 
