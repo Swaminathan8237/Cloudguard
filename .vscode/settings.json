@@ -6,5 +6,8 @@
     ],
     "python.autoComplete.extraPaths": [
         "C:\\Users\\Swaminathan\\AppData\\Local\\Programs\\Python\\Python310\\lib\\site-packages"
-    ]
+    ],
+    "python.analysis.diagnosticSeverityOverrides": {
+        "reportMissingImports": "none"
+    }
 }

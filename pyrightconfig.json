@@ -1,6 +1,15 @@
 {
-    "pythonPath": "C:\\Users\\Swaminathan\\AppData\\Local\\Programs\\Python\\Python310\\python.exe",
-    "extraPaths": [
-        "C:\\Users\\Swaminathan\\AppData\\Local\\Programs\\Python\\Python310\\lib\\site-packages"
-    ]
+  "include": [
+    "src",
+    "notebooks",
+    "."
+  ],
+  "venvPath": "C:\\Users\\Swaminathan\\AppData\\Local\\Programs\\Python",
+  "venv": "Python310",
+  "pythonVersion": "3.10",
+  "pythonPlatform": "Windows",
+  "extraPaths": [
+    "C:\\Users\\Swaminathan\\AppData\\Local\\Programs\\Python\\Python310\\lib\\site-packages"
+  ],
+  "reportMissingImports": "none"
 }
