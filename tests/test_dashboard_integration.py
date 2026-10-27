@@ -173,6 +173,32 @@ class TestDashboardIntegration(unittest.TestCase):
         finally:
             load_api_model()
 
+    # -----------------------------------------------------------------------
+    # 4. Simulation Console & CORS Integration
+    # -----------------------------------------------------------------------
+
+    def test_simulation_dashboard_serves_html(self):
+        """Verify GET /simulation/ serves index.html with HTTP 200 and text/html."""
+        response = self.client.get("/simulation/")
+        self.assertEqual(response.status_code, 200)
+        self.assertIn("text/html", response.headers.get("content-type", ""))
+        body = response.text
+        self.assertIn("CloudGuard-Water", body)
+        self.assertIn("SIMULATION MODE", body)
+        self.assertIn("telemetryChart", body)
+
+    def test_cors_allows_simulation_port_5173(self):
+        """Verify CORS allows origin http://127.0.0.1:5173."""
+        response = self.client.options(
+            "/predict",
+            headers={
+                "Origin": "http://127.0.0.1:5173",
+                "Access-Control-Request-Method": "POST",
+            },
+        )
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(response.headers.get("access-control-allow-origin"), "http://127.0.0.1:5173")
+
 
 if __name__ == "__main__":
     unittest.main()

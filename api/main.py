@@ -112,8 +112,10 @@ app.add_middleware(
     allow_origins=[
         "http://localhost",
         "http://localhost:3000",
+        "http://localhost:5173",
         "http://127.0.0.1",
         "http://127.0.0.1:3000",
+        "http://127.0.0.1:5173",
         "http://127.0.0.1:8000",
     ],
     allow_credentials=True,
@@ -127,6 +129,17 @@ app.add_middleware(
 dashboard_dir = Path(__file__).resolve().parent.parent / "dashboard"
 if dashboard_dir.exists():
     app.mount("/dashboard", StaticFiles(directory=str(dashboard_dir), html=True), name="dashboard")
+
+# Simulation Console Dashboard Integration (CloudGuard-Water-Simulation-Dashboard)
+sim_dashboard_dir = (
+    Path(__file__).resolve().parent.parent
+    / "CloudGuard-Water-Simulation-Dashboard"
+    / "CloudGuard-Water-Simulation-Dashboard"
+)
+if not (sim_dashboard_dir / "index.html").exists():
+    sim_dashboard_dir = Path(__file__).resolve().parent.parent / "CloudGuard-Water-Simulation-Dashboard"
+if sim_dashboard_dir.exists() and (sim_dashboard_dir / "index.html").exists():
+    app.mount("/simulation", StaticFiles(directory=str(sim_dashboard_dir), html=True), name="simulation")
 
 
 # ---------------------------------------------------------------------------
@@ -303,6 +316,7 @@ async def root():
         "documentation": "/docs",
         "health_check": "/health",
         "dashboard": "/dashboard",
+        "simulation_dashboard": "/simulation",
         "endpoints": ["/health", "/predict", "/explain"],
     }
 
