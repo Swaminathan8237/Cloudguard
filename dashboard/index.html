@@ -1,0 +1,238 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>CloudGuard-Water — Intelligent Water Quality Classification Dashboard</title>
+  <meta name="description" content="Explainable Machine Learning Water Quality Monitoring and Telemetry Dashboard for Cloud Services.">
+  <link rel="stylesheet" href="css/styles.css">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+</head>
+<body>
+
+  <!-- Top Global Header -->
+  <header class="app-header">
+    <div class="header-branding">
+      <div class="header-logo-badge">CG</div>
+      <div>
+        <h1 class="header-title">CloudGuard-Water</h1>
+        <p class="header-subtitle">ML for Cloud Services &bull; Intelligent Water Quality Classification &amp; Explainability</p>
+      </div>
+    </div>
+
+    <div class="header-status-group">
+      <div class="status-indicator">
+        <span class="status-label">Service Status</span>
+        <span class="badge badge-neutral" id="api-health-badge">CHECKING API...</span>
+      </div>
+      <div class="status-indicator">
+        <span class="status-label">Latency</span>
+        <span class="status-val font-mono" id="api-latency-val">-- ms</span>
+      </div>
+      <div class="status-indicator">
+        <span class="status-label">Last Ingestion</span>
+        <span class="status-val font-mono" id="last-update-time">--:--:--</span>
+      </div>
+    </div>
+  </header>
+
+  <!-- Telemetry Mode Navigation Bar -->
+  <nav class="mode-nav-bar" aria-label="Telemetry Mode Selector">
+    <div class="mode-tabs">
+      <button class="mode-tab active" data-mode="demo_stream" id="tab-demo-stream">
+        <span class="tab-icon">📡</span> Demo Telemetry Stream
+      </button>
+      <button class="mode-tab" data-mode="live_standby" id="tab-live-standby">
+        <span class="tab-icon">🔌</span> Live ESP32 Standby
+      </button>
+      <button class="mode-tab" data-mode="interactive" id="tab-interactive">
+        <span class="tab-icon">🎛️</span> Interactive "What-If" Tester
+      </button>
+    </div>
+  </nav>
+
+  <!-- Banner Alerts -->
+  <div class="banner banner-demo" id="demo-mode-banner" role="alert">
+    <div class="banner-icon">⚠️</div>
+    <div class="banner-text">
+      <strong>DEMO DATA — NOT LIVE SENSOR TELEMETRY</strong>
+      <span>Simulated sensor stream is active for end-to-end software verification and academic viva demonstration. Real sensor hardware integration remains explicitly pending physical commissioning.</span>
+    </div>
+  </div>
+
+  <div class="banner banner-standby" id="live-standby-banner" role="alert" style="display: none;">
+    <div class="banner-icon">ℹ️</div>
+    <div class="banner-text">
+      <strong>STANDBY: NO LIVE HARDWARE CONNECTED — PENDING PHYSICAL COMMISSIONING</strong>
+      <span>Physical sensor circuit, ADC voltage calibration, and live ESP32 ingestion remain pending physical hardware testing. The system never silently switches to simulated data during live standby.</span>
+    </div>
+  </div>
+
+  <!-- Main Application Content Container -->
+  <main class="main-container">
+
+    <!-- Scenario Controls (Demo Stream Mode) -->
+    <section class="controls-panel card" id="demo-controls-panel">
+      <div class="control-group">
+        <label for="scenario-select" class="control-label">Verification Scenario:</label>
+        <select id="scenario-select" class="select-input">
+          <!-- Dynamically populated from demoStream.js -->
+        </select>
+      </div>
+
+      <div class="control-actions">
+        <button class="btn btn-outline" id="btn-pause-stream">⏸ Pause Stream</button>
+      </div>
+    </section>
+
+    <!-- Interactive Manual Input Form (Interactive Mode) -->
+    <section class="card interactive-panel" id="interactive-panel" style="display: none;">
+      <h2 class="panel-title">🎛️ Interactive "What-If" Analysis</h2>
+      <p class="panel-description">Manually inject 4 physical water parameters to test the FastAPI Decision Tree inference, probability estimates, and traversal explanation.</p>
+
+      <div class="form-error-alert" id="interactive-form-error" style="display: none;" role="alert"></div>
+
+      <form id="interactive-form" class="interactive-form-grid">
+        <div class="form-field">
+          <label for="input-ph">pH Level (0.0 – 14.0)</label>
+          <input type="number" id="input-ph" step="0.01" min="0.0" max="14.0" value="7.25" required class="text-input">
+        </div>
+        <div class="form-field">
+          <label for="input-tds">Total Dissolved Solids (ppm)</label>
+          <input type="number" id="input-tds" step="0.1" min="0.0" value="185.0" required class="text-input">
+        </div>
+        <div class="form-field">
+          <label for="input-turb">Turbidity (NTU)</label>
+          <input type="number" id="input-turb" step="0.01" min="0.0" value="0.45" required class="text-input">
+        </div>
+        <div class="form-field">
+          <label for="input-temp">Water Temperature (°C)</label>
+          <input type="number" id="input-temp" step="0.1" min="-10.0" max="100.0" value="22.0" required class="text-input">
+        </div>
+        <div class="form-actions">
+          <button type="submit" class="btn btn-primary">🚀 Run Inference &amp; Explain</button>
+          <button type="button" class="btn btn-outline" id="btn-reset-interactive">↺ Reset Defaults</button>
+        </div>
+      </form>
+    </section>
+
+    <!-- 4 Sensor Cards Grid -->
+    <section aria-label="Physical Sensor Telemetry" class="sensor-cards-grid" id="sensor-cards-grid">
+      <!-- Injected via sensorCards.js -->
+    </section>
+
+    <!-- Dashboard Dual-Column Layout: Inference & Explainability -->
+    <div class="dashboard-split-grid">
+      
+      <!-- Left Column: Classification, Probabilities, Decision Ladder -->
+      <section class="card explanation-card" aria-label="Model Classification & Explainability">
+        <header class="card-header border-bottom">
+          <div class="header-badge-row">
+            <h2 class="panel-title">Model Classification &amp; Explainability</h2>
+            <span class="badge badge-neutral" id="leaf-node-badge">Leaf Node #--</span>
+          </div>
+        </header>
+
+        <!-- Prediction Banner Row -->
+        <div class="prediction-hero-row">
+          <div class="prediction-result-col">
+            <span class="section-micro-label">Decision Tree Classification</span>
+            <div class="prediction-badge-container">
+              <span class="badge badge-neutral badge-lg" id="prediction-badge">AWAITING DATA</span>
+            </div>
+          </div>
+
+          <div class="probabilities-col">
+            <span class="section-micro-label">Estimated Class Probabilities</span>
+            <div class="prob-values-row font-mono">
+              <span>Safe: <strong id="prob-safe-val">--%</strong></span>
+              <span>Unsafe: <strong id="prob-unsafe-val">--%</strong></span>
+            </div>
+            <div class="prob-bar-track" aria-hidden="true">
+              <div class="prob-bar-fill prob-safe" id="prob-bar-safe" style="width: 0%"></div>
+              <div class="prob-bar-fill prob-unsafe" id="prob-bar-unsafe" style="width: 0%"></div>
+            </div>
+            <span class="prob-subtext">Empirical leaf proportions from trained Decision Tree</span>
+          </div>
+        </div>
+
+        <!-- Primary Influencing Features -->
+        <div class="primary-features-section">
+          <span class="section-micro-label">Primary Influencing Features</span>
+          <div class="features-pills-row" id="primary-features-container">
+            <span class="text-muted">Awaiting telemetry...</span>
+          </div>
+        </div>
+
+        <!-- Decision Tree Traversal Ladder -->
+        <div class="decision-ladder-section">
+          <span class="section-micro-label">Decision Tree Inference Path</span>
+          <div class="steps-ladder" id="decision-path-steps">
+            <p class="text-muted">Awaiting inference payload...</p>
+          </div>
+        </div>
+
+        <!-- Human Narrative Explanation -->
+        <div class="narrative-section">
+          <span class="section-micro-label">Operational Explanation</span>
+          <div class="narrative-box" id="human-explanation-text">
+            Awaiting telemetry...
+          </div>
+        </div>
+
+        <!-- Training Range Warnings Container -->
+        <div class="warnings-box" id="warnings-container" style="display: none;">
+          <h3 class="warnings-title">⚠️ Non-Blocking Training-Range Warnings</h3>
+          <ul class="warnings-list" id="warnings-list"></ul>
+        </div>
+      </section>
+
+      <!-- Right Column: Historical Canvas Time-Series Chart -->
+      <section class="card chart-card" aria-label="Historical Telemetry Charts">
+        <header class="card-header border-bottom">
+          <h2 class="panel-title">Historical Telemetry Trends</h2>
+          <div class="chart-controls">
+            <label for="chart-metric-select" class="sr-only">Chart Metric</label>
+            <select id="chart-metric-select" class="select-input select-sm">
+              <option value="normalized">All Parameters (Normalized 0–100%)</option>
+              <option value="pH">pH Level (4.0 – 12.0)</option>
+              <option value="TDS_ppm">Total Dissolved Solids (0 – 2500 ppm)</option>
+              <option value="Turbidity_NTU">Turbidity (0 – 60 NTU)</option>
+              <option value="Temperature_C">Water Temperature (10 – 40 °C)</option>
+            </select>
+          </div>
+        </header>
+
+        <div class="canvas-chart-wrapper">
+          <canvas id="telemetry-chart" height="260"></canvas>
+        </div>
+
+        <footer class="chart-legend-footer">
+          <div class="legend-item"><span class="legend-dot dot-ph"></span> pH</div>
+          <div class="legend-item"><span class="legend-dot dot-tds"></span> TDS (ppm)</div>
+          <div class="legend-item"><span class="legend-dot dot-turb"></span> Turbidity (NTU)</div>
+          <div class="legend-item"><span class="legend-dot dot-temp"></span> Temperature (°C)</div>
+        </footer>
+      </section>
+
+    </div>
+
+    <!-- Statutory Safety & Operational Advisory Footer Notice -->
+    <footer class="safety-advisory-card card" role="note">
+      <div class="advisory-icon">🛡️</div>
+      <div class="advisory-body">
+        <h3 class="advisory-title">Operational Safety &amp; Non-Certification Notice</h3>
+        <p class="advisory-text" id="safety-notice-text">
+          This output is a statistical machine learning classification based on 4 physical sensor inputs (pH, TDS, turbidity, temperature), not a certified drinking-water potability declaration. Estimated model class probabilities from the trained Decision Tree are empirical leaf node sample proportions and do not guarantee real-world water safety. Physical sensors cannot detect microbiological pathogens (e.g., E. coli, Salmonella, noroviruses), toxic heavy metals (e.g., arsenic, lead, mercury), or hazardous organic chemicals. Standardized laboratory testing under statutory drinking-water standards (such as WHO guidelines or BIS IS 10500) remains strictly necessary to establish actual potability. Physical equipment actuation (valves, pumps) is strictly disabled.
+        </p>
+      </div>
+    </footer>
+
+  </main>
+
+  <!-- Application Bootstrap -->
+  <script type="module" src="js/app.js"></script>
+</body>
+</html>

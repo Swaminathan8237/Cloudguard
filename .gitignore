@@ -53,3 +53,8 @@ Thumbs.db
 *.swp
 *.swo
 scratch/
+
+# Embedded credentials & secrets
+firmware/**/config.h
+!firmware/**/config.h.example
+*.local.h

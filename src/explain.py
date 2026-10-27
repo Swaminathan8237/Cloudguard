@@ -135,7 +135,7 @@ def predict_with_probabilities(
     model: Any, X: pd.DataFrame
 ) -> Tuple[np.ndarray, np.ndarray, List[str]]:
     """
-    Generate predictions and calibrated class probabilities from a trained model.
+    Generate predictions and estimated model class probabilities from the trained Decision Tree.
 
     Args:
         model: Trained scikit-learn classifier with predict and predict_proba methods.
@@ -145,12 +145,15 @@ def predict_with_probabilities(
         Tuple of:
           - class_indices: np.ndarray of predicted class integers (0 or 1)
           - probabilities: np.ndarray of shape (N, 2) where col 0 = P(Safe), col 1 = P(Unsafe)
+                           representing estimated model class probabilities from the trained Decision Tree.
+                           Note: predict_proba() outputs represent empirical leaf proportions from training
+                           and do not guarantee real-world drinking-water safety.
           - class_labels: List of predicted string labels ('Safe' or 'Unsafe')
     """
     raw_preds = model.predict(X)
     raw_probas = model.predict_proba(X)
 
-    # Validate model.classes_ ordering
+    # Validate model.classes_ ordering strictly
     classes = list(model.classes_)
     if classes != [0, 1] and classes != [0.0, 1.0]:
         raise ValueError(f"Unexpected model.classes_ ordering: {classes}. Expected [0, 1].")
@@ -184,7 +187,7 @@ def extract_decision_path(
     df = validate_input(sample)
     feature_arr = df[FEATURE_NAMES].to_numpy()
 
-    dp = model.decision_path(df[FEATURE_NAMES])
+    dp: Any = model.decision_path(df[FEATURE_NAMES])
     node_indices = [int(idx) for idx in dp.indices]
     tree = model.tree_
 

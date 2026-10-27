@@ -239,9 +239,9 @@ def investigate_near_perfect_scores(df: pd.DataFrame):
         (df['pH'] <= 7.8)
     )
     
-    exact_matches = int((safe_ground_truth == rule_predicted_safe).sum())
-    mismatches = int((safe_ground_truth != rule_predicted_safe).sum())
-    match_pct = (exact_matches / len(df)) * 100.0
+    exact_matches = (safe_ground_truth == rule_predicted_safe).sum()
+    mismatches = (safe_ground_truth != rule_predicted_safe).sum()
+    match_pct = (float(exact_matches) / len(df)) * 100.0
     
     print(f"  Total Observations in Dataset : {len(df):,}")
     print(f"  Exact Matches with Simple Rule: {exact_matches:,} ({match_pct:.4f}%)")
@@ -355,7 +355,7 @@ def generate_validation_plots(cv_df, test_df, trained_dict, X_test, y_test, df):
         if hasattr(m, "predict_proba"):
             probs = m.predict_proba(X_test)[:, 1]
             fpr, tpr, _ = roc_curve(y_test, probs)
-            roc_auc = auc(fpr, tpr)
+            roc_auc = float(auc(np.asarray(fpr, dtype=float), np.asarray(tpr, dtype=float)))
             ax_roc.plot(fpr, tpr, label=f"{name} (AUC = {roc_auc:.5f})", color=col, linewidth=2)
             
             prec, rec, _ = precision_recall_curve(y_test, probs)

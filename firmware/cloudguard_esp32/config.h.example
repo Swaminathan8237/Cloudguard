@@ -1,0 +1,80 @@
+/**
+ * @file config.h.example
+ * @brief CloudGuard-Water Phase 7.3: Configuration Header Template
+ *
+ * Copy this file to 'config.h' and fill in your local Wi-Fi credentials and LAN IP.
+ * NOTE: 'config.h' is in .gitignore to prevent committing private credentials.
+ */
+
+#ifndef CONFIG_H
+#define CONFIG_H
+
+// ===========================================================================
+// 1. Wi-Fi Network Credentials
+// ===========================================================================
+// Replace with your local 2.4 GHz Wi-Fi SSID and WPA2 Password
+#define WIFI_SSID           "YOUR_WIFI_SSID"
+#define WIFI_PASSWORD       "YOUR_WIFI_PASSWORD"
+
+// ===========================================================================
+// 2. CloudGuard FastAPI Prediction Microservice Endpoint
+// ===========================================================================
+// Use your host PC's actual LAN IP address (e.g., from running `ipconfig` on Windows).
+// The FastAPI server must be launched with: python -m uvicorn api.main:app --host 0.0.0.0 --port 8000
+#define API_PREDICT_URL     "http://192.168.0.106:8000/predict"
+#define HTTP_TIMEOUT_MS     5000     // HTTP request timeout in milliseconds
+
+// ===========================================================================
+// 3. Hardware Pin Assignments (STRICTLY ADC1 Pins for Analog Inputs)
+// ===========================================================================
+// CRITICAL: ESP32 ADC2 channels are disabled when Wi-Fi is active!
+// All analog sensors MUST be attached to ADC1 channels (GPIO 32, 33, 34, 35, 36, 39).
+#define PIN_PH_ADC          34       // ADC1_CH6 (Input-only, pH probe via Option D voltage divider)
+#define PIN_TDS_ADC         35       // ADC1_CH7 (Input-only, TDS probe direct 3.3V connection)
+#define PIN_TURB_ADC        32       // ADC1_CH4 (Turbidity sensor via Option D voltage divider)
+#define PIN_DS18B20         4        // GPIO 4 for DS18B20 1-Wire bus (requires 4.7k pull-up to 3.3V)
+
+// ===========================================================================
+// 4. Voltage Divider Resistors (Option D: 15k Upper / 10k Lower)
+// ===========================================================================
+// OPTION D HEADROOM SPECIFICATION (PRIMARY DESIGN):
+//   R_upper = 15kΩ, R_lower = 10kΩ
+//   Divider Ratio = R_lower / (R_upper + R_lower) = 10 / (15 + 10) = 0.400
+//   Reconstruction Multiplier M = (R_upper + R_lower) / R_lower = 2.500x
+//
+// ELECTRICAL ACCURACY MARGINS:
+//   At 5.00V (maximum sensor rail saturation): V_pin = 5.00V * 0.4 = 2.00V <= 2.45V linear ceiling!
+//   At 4.50V (clear water turbidity):         V_pin = 4.50V * 0.4 = 1.80V (optimal linear region)
+//   At 3.78V (extreme acidic pH 0):           V_pin = 3.78V * 0.4 = 1.51V (optimal linear region)
+//   At 2.50V (neutral buffer pH 7):           V_pin = 2.50V * 0.4 = 1.00V (optimal linear region)
+//   Headroom to 2.45V effective accuracy limit: +450 mV margin
+//   Headroom to 3.60V absolute maximum rating:  +1.60 V margin
+#define TURB_DIVIDER_R1     15000.0f // Upper resistor in Ohms (R3, 15kΩ)
+#define TURB_DIVIDER_R2     10000.0f // Lower resistor in Ohms (R4, 10kΩ)
+
+#define PH_DIVIDER_R1       15000.0f // Upper resistor in Ohms (R1, 15kΩ)
+#define PH_DIVIDER_R2       10000.0f // Lower resistor in Ohms (R2, 10kΩ)
+
+// ===========================================================================
+// 5. Sensor Calibration Constants (SENSOR-SIDE VOLTAGE DOMAIN)
+// ===========================================================================
+// NOTE: All calibration constants MUST be defined in the SENSOR-SIDE voltage domain.
+// The firmware reconstructs sensor-side voltage using voltage dividers before calibration.
+#define CALIB_PH_V_NEUTRAL  2.50f    // Sensor-side voltage in standard pH 7.00 buffer (at 25C)
+#define CALIB_PH_V_ACIDIC   3.05f    // Sensor-side voltage in standard pH 4.00 buffer (at 25C)
+
+// TDS probe calibration factor (K_cell = 1.0 default, PROVISIONAL until calibrated with 1413 µS/cm standard)
+#define CALIB_TDS_K_CELL    1.00f
+
+// Optical turbidity clear-water reference voltage (sensor-side, ~4.15V in distilled water)
+// PROVISIONAL CALIBRATION NOTICE: Formazin standards required for certified NTU accuracy.
+#define CALIB_TURB_V_CLEAR  4.15f
+
+// ===========================================================================
+// 6. Telemetry & Sampling Parameters
+// ===========================================================================
+#define TELEMETRY_INTERVAL_MS 10000  // Time between API transmissions (10 seconds)
+#define SAMPLE_AVERAGE_COUNT  10     // Number of ADC samples to average per reading
+#define SAMPLE_DELAY_MS       15     // Delay between individual ADC samples (milliseconds)
+
+#endif // CONFIG_H

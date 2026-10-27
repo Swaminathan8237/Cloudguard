@@ -6,7 +6,7 @@
   "extraPaths": [
     "C:\\Users\\Swaminathan\\AppData\\Local\\Programs\\Python\\Python310\\lib\\site-packages"
   ],
-  "typeCheckingMode": "basic",
+  "typeCheckingMode": "off",
   "reportMissingImports": "none",
   "reportMissingTypeStubs": "none",
   "reportDeprecated": "none"

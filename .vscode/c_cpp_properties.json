@@ -1,0 +1,24 @@
+{
+  "configurations": [
+    {
+      "name": "ESP32",
+      "includePath": [
+        "${workspaceFolder}/**",
+        "C:/Users/Swaminathan/AppData/Local/Arduino15/packages/esp32/hardware/esp32/3.3.11/cores/esp32",
+        "C:/Users/Swaminathan/AppData/Local/Arduino15/packages/esp32/hardware/esp32/3.3.11/variants/esp32",
+        "C:/Users/Swaminathan/AppData/Local/Arduino15/packages/esp32/hardware/esp32/3.3.11/libraries/**"
+      ],
+      "defines": [
+        "USBCON",
+        "ESP32",
+        "ARDUINO=10808",
+        "ARDUINO_ARCH_ESP32",
+        "ARDUINO_ESP32_DEV"
+      ],
+      "cStandard": "c11",
+      "cppStandard": "c++17",
+      "intelliSenseMode": "windows-gcc-arm"
+    }
+  ],
+  "version": 4
+}

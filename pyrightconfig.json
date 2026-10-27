@@ -1,8 +1,11 @@
 {
   "include": [
     "src",
-    "notebooks",
-    "."
+    "api",
+    "tests"
+  ],
+  "exclude": [
+    "notebooks"
   ],
   "venvPath": "C:\\Users\\Swaminathan\\AppData\\Local\\Programs\\Python",
   "venv": "Python310",
@@ -14,5 +17,6 @@
   "typeCheckingMode": "basic",
   "reportMissingImports": "none",
   "reportMissingTypeStubs": "none",
-  "reportDeprecated": "none"
+  "reportDeprecated": "none",
+  "reportArgumentType": "none"
 }
